@@ -5,6 +5,8 @@ import depthai as dai
 import numpy as np
 import os
 import json
+import uuid
+from gps import get_gps_coordinates
 
 # Configuration
 MODEL_PATH = 'best_openvino_2022.1_6shave_m.blob'
@@ -82,27 +84,42 @@ def annotateFrame(frame, detections):
     return frame
 
 # Save predictions
-def saveDetections(frame, detections, frame_count):
-    image_path = f"{OUTPUT_DIR}/detection_{frame_count}.jpg"
-    txt_path = f"{OUTPUT_DIR}/detection_{frame_count}.txt"
+def saveDetections(frame, detections, lat, lon, frame_id):
+    detection_dir = f"{OUTPUT_DIR}/detection_{frame_id}"
+    image_path = f"{detection_dir}/frame.jpg"
+    json_path = f"{detection_dir}/metadata.json"
 
     # Save image
     cv2.imwrite(image_path, frame)
 
-    # Save detections
-    with open(txt_path, "w") as f:
-        for det in detections:
-            bbox = (det.xmin, det.ymin, det.xmax, det.ymax)
-            f.write(f"{det.label} {det.confidence:.6f} {bbox[0]} {bbox[1]} {bbox[2]} {bbox[3]}\n")
+    # Save detection data as JSON
+    detection_data = {
+        "latitude": lat,
+        "longitude": lon,
+        "potholes": [
+            {
+                "label": det.label,
+                "confidence": det.confidence,
+                "box": {
+                    "x_min": det.xmin,
+                    "y_min": det.ymin,
+                    "x_max": det.xmax,
+                    "y_max": det.ymax
+                }
+            } for det in detections
+        ]
+    }
+    with open(json_path, "w") as f:
+        json.dump(detection_data, f, indent=2)
 
-    print(f"Saved detection: {image_path} and {txt_path}")
+    print(f"Saved detection: {image_path} and {json_path}")
 
 # Run pipeline
 with dai.Device(pipeline) as device:
     qRgb = device.getOutputQueue(name="rgb", maxSize=4, blocking=False)
     qDet = device.getOutputQueue(name="nn", maxSize=4, blocking=False)
 
-    frame_count = 0
+    frame_id = uuid.uuid4()
     print("Device is running...")
     while True:
         inRgb = qRgb.get()
@@ -110,8 +127,9 @@ with dai.Device(pipeline) as device:
 
         frame = inRgb.getCvFrame()
         detections = inDet.detections
+        lat, lon = get_gps_coordinates()
 
         if detections:
             annotated_frame = annotateFrame(frame, detections)
-            saveDetections(annotated_frame, detections, frame_count)
-            frame_count += 1
+            saveDetections(annotated_frame, detections, lat, lon, frame_id)
+            frame_id = uuid.uuid4()

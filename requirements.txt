@@ -1,0 +1,6 @@
+pyserial
+pynmea2
+numpy 
+opencv-python-headless 
+depthai 
+depthai-sdk

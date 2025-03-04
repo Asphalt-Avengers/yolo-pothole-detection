@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y \
     libopencv-dev \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir numpy opencv-python-headless depthai depthai-sdk 
+RUN pip install --no-cache-dir numpy opencv-python-headless depthai depthai-sdk pyserial pynmea2 
 
 ENV OPENBLAS_CORETYPE=ARMV8
 
