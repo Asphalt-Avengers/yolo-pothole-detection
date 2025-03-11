@@ -5,13 +5,13 @@ RUN apt-get update && apt-get install -y \
     libopencv-dev \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir numpy opencv-python-headless depthai depthai-sdk pyserial pynmea2 
-
 ENV OPENBLAS_CORETYPE=ARMV8
 
 WORKDIR /app
 
-COPY . .
+COPY best_openvino_2022.1_6shave_m.blob best_m.json requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
 
 RUN mkdir -p /app/detections
 
