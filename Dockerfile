@@ -9,7 +9,7 @@ ENV OPENBLAS_CORETYPE=ARMV8
 
 WORKDIR /app
 
-COPY best_openvino_2022.1_6shave_m.blob best_m.json requirements.txt .
+COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -17,4 +17,4 @@ RUN mkdir -p /app/detections
 
 ENV UDEV=1
 
-CMD ["python", "avengers_assemble.py"]
+CMD ["python", "src/avengers_assemble.py"]

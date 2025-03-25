@@ -30,7 +30,7 @@ docker build -t asphalt-avengers .
 ### 3. Run the Docker Container
 Run the container, ensuring USB access is granted and outputs are saved to a mounted directory:
 ```bash
-docker run --rm -it --privileged -v /dev/bus/usb:/dev/bus/usb -v $(pwd)/detections:/app/detections -v $(pwd)/src:/app/src asphalt-avengers
+docker run --rm -it --privileged -v ${pwd}/models:/app/models -v /dev/bus/usb:/dev/bus/usb -v $(pwd)/detections:/app/detections -v $(pwd)/src:/app/src asphalt-avengers
 ```
 
 ### 4. Output Files

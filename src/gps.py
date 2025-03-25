@@ -32,4 +32,3 @@ def get_gps_coordinates(port="/dev/ttyAMA0", baudrate=9600, timeout=0.5):
         print(f"Serial error: {e}")
         return None, None
     
-
