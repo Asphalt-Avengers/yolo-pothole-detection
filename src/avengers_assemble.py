@@ -12,10 +12,10 @@ import serial
 import pynmea2
 import signal
 import atexit
-from gps import get_gps_coordinates  # We still keep the existing helper for fallback or reference
+from gps import get_gps_coordinates  # Existing helper for fallback or reference
 
 # --- Global GPS variables ---
-current_gps = (43.473092, -80.539608)  # Initial/default coordinates (E7 LMAO)
+current_gps = (43.473092, -80.539608)  # Default coordinates
 gps_lock = threading.Lock()
 gps_stop_event = threading.Event()
 
@@ -110,8 +110,10 @@ def annotateFrame(frame, detections):
     for det in detections:
         bbox = frameNorm(frame, (det.xmin, det.ymin, det.xmax, det.ymax))
         cv2.rectangle(frame, (bbox[0], bbox[1]), (bbox[2], bbox[3]), (255, 0, 0), 2)
-        label_text = f"{labels[det.label]}: {det.confidence:.2f}" if labels else f"{det.label}: {det.confidence:.2f}"
-        cv2.putText(frame, label_text, (bbox[0], bbox[1] - 10),
+        label_text = (f"{labels[det.label]}: {det.confidence:.2f}"
+                      if labels else f"{det.label}: {det.confidence:.2f}")
+        # Draw text inside the bounding box at the top left corner
+        cv2.putText(frame, label_text, (bbox[0] + 2, bbox[1] + 15),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
     return frame
 
@@ -142,16 +144,8 @@ def saveDetections(frame, detections, lat, lon, frame_id):
     print(f"Saved detection: {image_path} and {json_path}")
 
 # --- Resource Cleanup ---
-video_writer = None  # Global video writer variable
-# Create a unique filename for the video using a timestamp
-video_filename = f"realtime_output_{time.strftime('%Y%m%d_%H%M%S')}.mp4"
-
 def cleanup():
-    global video_writer
     print("Cleaning up resources...")
-    if video_writer is not None:
-        video_writer.release()
-        print("Video writer released.")
     cv2.destroyAllWindows()
     gps_stop_event.set()
 
@@ -180,18 +174,13 @@ try:
             inRgb = qRgb.get()
             inDet = qDet.get()
             frame = inRgb.getCvFrame()
-            
-            if video_writer is None:
-                fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-                video_writer = cv2.VideoWriter(video_filename, fourcc, 30, (frame.shape[1], frame.shape[0]))
-                print(f"Video writer initialized with file: {video_filename}")
 
-            video_writer.write(frame)
             detections = inDet.detections
 
             if detections:
                 with gps_lock:
                     lat, lon = current_gps
+                # Annotate all detections on a copy of the frame
                 annotated_frame = annotateFrame(frame.copy(), detections)
                 saveDetections(annotated_frame, detections, lat, lon, frame_id)
                 frame_id = uuid.uuid4()
