@@ -43,9 +43,10 @@ def gps_polling_thread(port="/dev/ttyAMA0", baudrate=9600, timeout=0.5):
         if newdata and newdata.startswith("$GPRMC"):
             try:
                 newmsg = pynmea2.parse(newdata)
-                lat, lon = newmsg.latitude, newmsg.longitude
-                with gps_lock:
-                    current_gps = (lat, lon)
+                if newmsg.status == 'A' and not (newmsg.latitude == 0.0 and newmsg.longitude == 0.0):
+                    lat, lon = newmsg.latitude, newmsg.longitude
+                    with gps_lock:
+                        current_gps = (lat, lon)
             except pynmea2.ParseError:
                 continue
         time.sleep(0.1)
@@ -113,7 +114,7 @@ def annotateFrame(frame, detections):
         label_text = (f"{labels[det.label]}: {det.confidence:.2f}"
                       if labels else f"{det.label}: {det.confidence:.2f}")
         # Draw text inside the bounding box at the top left corner
-        cv2.putText(frame, label_text, (bbox[0] + 2, bbox[1] + 15),
+        cv2.putText(frame, label_text, (bbox[0], bbox[1] + 15),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
     return frame
 
